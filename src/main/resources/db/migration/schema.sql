@@ -100,6 +100,26 @@ CREATE TABLE IF NOT EXISTS counseling_history (
     FOREIGN KEY (performed_by) REFERENCES user(id)
 );
 
+-- 알림 테이블
+CREATE TABLE IF NOT EXISTS notification (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,  -- 알림을 받을 사용자
+    counseling_id BIGINT,     -- 관련 상담 (선택사항)
+
+    type VARCHAR(50) NOT NULL,  -- ASSIGNED, TRANSFERRED, ESCALATED, STATUS_CHANGED, COMMENT_ADDED, SLA_WARNING, SLA_VIOLATED, RESOLVED, CLOSED
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+
+    is_read BOOLEAN DEFAULT FALSE,
+    read_at TIMESTAMP,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- 외래 키
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (counseling_id) REFERENCES counseling(id)
+);
+
 -- 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_counseling_status ON counseling(status);
 CREATE INDEX IF NOT EXISTS idx_counseling_priority ON counseling(priority);
@@ -118,3 +138,8 @@ CREATE INDEX IF NOT EXISTS idx_user_is_active ON user(is_active);
 CREATE INDEX IF NOT EXISTS idx_counseling_history_counseling_id ON counseling_history(counseling_id);
 CREATE INDEX IF NOT EXISTS idx_counseling_history_performed_by ON counseling_history(performed_by);
 CREATE INDEX IF NOT EXISTS idx_counseling_history_action_type ON counseling_history(action_type);
+
+CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notification(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_counseling_id ON notification(counseling_id);
+CREATE INDEX IF NOT EXISTS idx_notification_is_read ON notification(is_read);
+CREATE INDEX IF NOT EXISTS idx_notification_created_at ON notification(created_at);

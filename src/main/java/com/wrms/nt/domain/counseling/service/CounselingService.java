@@ -4,6 +4,7 @@ import com.wrms.nt.domain.common.entity.Priority;
 import com.wrms.nt.domain.common.entity.Role;
 import com.wrms.nt.domain.counseling.entity.*;
 import com.wrms.nt.domain.counseling.repository.CounselingRepository;
+import com.wrms.nt.domain.notification.service.NotificationService;
 import com.wrms.nt.domain.user.entity.User;
 import com.wrms.nt.domain.user.service.UserService;
 import org.springframework.stereotype.Service;
@@ -23,13 +24,16 @@ public class CounselingService {
     private final CounselingRepository counselingRepository;
     private final CounselingHistoryService historyService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public CounselingService(CounselingRepository counselingRepository,
                            CounselingHistoryService historyService,
-                           UserService userService) {
+                           UserService userService,
+                           NotificationService notificationService) {
         this.counselingRepository = counselingRepository;
         this.historyService = historyService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -141,6 +145,13 @@ public class CounselingService {
         // 이력 기록: 할당
         historyService.createHistory(counseling.getId(), ActionType.ASSIGNED, assignedBy);
 
+        // 알림 생성: 새 상담 할당
+        notificationService.createAssignedNotification(
+            counselor.getId(),
+            counseling.getId(),
+            counseling.getCustomerName()
+        );
+
         return counseling;
     }
 
@@ -208,6 +219,15 @@ public class CounselingService {
             reason.name(), comment, performedBy
         );
 
+        // 알림 생성: 상담 이관
+        Optional<User> fromUser = userService.findById(fromCounselorId);
+        notificationService.createTransferredNotification(
+            toCounselorId,
+            counselingId,
+            counseling.getCustomerName(),
+            fromUser.map(User::getName).orElse("알 수 없음")
+        );
+
         // 이관 후 자동으로 ASSIGNED 상태로 변경
         updateStatus(counselingId, CounselingStatus.ASSIGNED, toCounselorId);
 
@@ -258,6 +278,14 @@ public class CounselingService {
         historyService.createEscalationHistory(
             counselingId, fromUserId, targetUser.getId(),
             reason, comment, performedBy
+        );
+
+        // 알림 생성: 에스컬레이션
+        notificationService.createEscalatedNotification(
+            targetUser.getId(),
+            counselingId,
+            counseling.getCustomerName(),
+            newLevel
         );
 
         return counseling;
@@ -321,6 +349,17 @@ public class CounselingService {
 
         // 이력 기록: 코멘트
         historyService.createCommentHistory(counselingId, comment, performedBy);
+
+        // 알림 생성: 코멘트 추가 (담당자에게 알림)
+        if (counseling.getCounselorId() != null && !counseling.getCounselorId().equals(performedBy)) {
+            Optional<User> commenter = userService.findById(performedBy);
+            notificationService.createCommentAddedNotification(
+                counseling.getCounselorId(),
+                counselingId,
+                counseling.getCustomerName(),
+                commenter.map(User::getName).orElse("알 수 없음")
+            );
+        }
     }
 
     /**
