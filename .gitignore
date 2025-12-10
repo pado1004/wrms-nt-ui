@@ -51,6 +51,7 @@ build/
 
 # VS Code
 .vscode/
+.history/
 
 # OS
 .DS_Store
