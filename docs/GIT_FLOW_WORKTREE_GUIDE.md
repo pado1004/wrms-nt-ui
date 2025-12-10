@@ -5,10 +5,11 @@
 2. [Git Flow 브랜치 전략](#git-flow-브랜치-전략)
 3. [Git Worktree 소개](#git-worktree-소개)
 4. [Git Flow + Worktree 통합 전략](#git-flow--worktree-통합-전략)
-5. [실무 워크플로우](#실무-워크플로우)
-6. [자동화 스크립트](#자동화-스크립트)
-7. [모범 사례](#모범-사례)
-8. [문제 해결](#문제-해결)
+5. [초기 셋업](#초기-셋업)
+6. [실무 워크플로우](#실무-워크플로우)
+7. [자동화 스크립트](#자동화-스크립트)
+8. [모범 사례](#모범-사례)
+9. [문제 해결](#문제-해결)
 
 ---
 
@@ -163,6 +164,188 @@ wrms-nt-ui/                          # 메인 저장소
 #### 4. **Main/Develop 브랜치**
 - 메인 저장소 디렉토리에서 직접 작업
 - Worktree 생성 불필요
+
+---
+
+## 초기 셋업
+
+원격 저장소에 `main` 브랜치만 있는 상황에서 Git Flow와 Git Worktree 환경을 처음 설정하는 방법을 안내합니다.
+
+### 전제 조건
+
+- 원격 저장소에 `main` 브랜치만 존재
+- 로컬에 저장소가 아직 클론되지 않았거나, 클론만 되어 있는 상태
+- Git 2.5 이상 버전 (Worktree 기능 지원)
+
+### Step 1: 저장소 클론
+
+```bash
+# 원격 저장소 클론
+cd /Users/pado/IdeaProjects
+git clone <repository-url> wrms-nt-ui
+cd wrms-nt-ui
+
+# 현재 브랜치 확인 (main 브랜치에 있어야 함)
+git branch -a
+```
+
+### Step 2: Develop 브랜치 생성 및 설정
+
+```bash
+# main 브랜치에서 develop 브랜치 생성
+git checkout -b develop
+
+# develop 브랜치를 원격 저장소에 푸시
+git push -u origin develop
+
+# 현재 develop 브랜치에 있음 (다음 단계를 위해 확인)
+git branch
+```
+
+**참고:** 원격 저장소의 기본 브랜치를 `develop`으로 변경하려면 GitHub/GitLab 등의 웹 인터페이스에서 설정을 변경하세요.
+
+### Step 3: Worktree 디렉토리 구조 생성
+
+**중요:** `worktrees/` 디렉토리는 단순한 디렉토리 구조이므로 어떤 브랜치에서 만들어도 상관없습니다. 하지만 일관성을 위해 **develop 브랜치에서 생성**하는 것을 권장합니다.
+
+```bash
+# 현재 develop 브랜치에 있는지 확인
+git branch
+# * develop 이 표시되어야 함
+
+# worktrees 디렉토리 및 하위 디렉토리 생성
+mkdir -p worktrees/feature
+mkdir -p worktrees/release
+mkdir -p worktrees/hotfix
+
+# 디렉토리 구조 확인
+tree worktrees -L 2
+# 또는
+ls -la worktrees/
+```
+
+**참고:**
+- `worktrees/` 디렉토리는 Git이 관리하는 디렉토리가 아니라 단순한 폴더 구조입니다.
+- 실제 Worktree는 `git worktree add` 명령어로 생성되며, 이때 Git이 자동으로 관리합니다.
+- `worktrees/` 디렉토리를 `.gitignore`에 추가하지 않습니다 (Git이 Worktree를 추적해야 함).
+- main 브랜치로 돌아갈 필요 없이 develop 브랜치에서 바로 생성하면 됩니다.
+
+### Step 4: 기본 설정 확인
+
+```bash
+# 현재 브랜치 확인
+git branch
+
+# 원격 저장소 설정 확인
+git remote -v
+
+# Worktree 목록 확인 (현재는 메인 저장소만 표시됨)
+git worktree list
+
+# Git 버전 확인 (2.5 이상 필요)
+git --version
+```
+
+### Step 5: 자동화 스크립트 준비 (선택사항)
+
+자동화 스크립트를 사용할 계획이라면 스크립트 디렉토리를 생성하고 스크립트를 추가합니다:
+
+```bash
+# scripts 디렉토리 생성
+mkdir -p scripts
+
+# 스크립트 파일 생성 (자동화 스크립트 섹션 참조)
+# 이후 자동화 스크립트 섹션의 스크립트들을 scripts/ 디렉토리에 추가
+
+# 실행 권한 부여
+chmod +x scripts/git-worktree-*.sh
+```
+
+### Step 6: IDE 프로젝트 설정
+
+#### IntelliJ IDEA
+
+1. **메인 프로젝트 열기:**
+   - File → Open → `/Users/pado/IdeaProjects/wrms-nt-ui` 선택
+   - `develop` 브랜치에서 작업하도록 설정
+
+2. **추가 설정:**
+   - Settings → Version Control → Git
+   - Git executable 경로 확인
+   - Auto-update 체크 (선택사항)
+
+#### VS Code
+
+1. **메인 워크스페이스 열기:**
+   - File → Open Folder → `/Users/pado/IdeaProjects/wrms-nt-ui` 선택
+
+2. **Git 설정 확인:**
+   - Source Control 패널에서 Git이 정상적으로 인식되는지 확인
+
+### 초기 셋업 완료 확인
+
+다음 명령어로 초기 셋업이 올바르게 완료되었는지 확인합니다:
+
+```bash
+# 브랜치 목록 확인 (main, develop이 있어야 함)
+git branch -a
+
+# Worktree 목록 확인
+git worktree list
+
+# 원격 저장소 확인
+git remote -v
+
+# 디렉토리 구조 확인
+ls -la worktrees/
+```
+
+**예상 출력:**
+```
+* develop
+  main
+  remotes/origin/develop
+  remotes/origin/main
+
+/Users/pado/IdeaProjects/wrms-nt-ui  [develop]
+```
+
+### 다음 단계
+
+초기 셋업이 완료되면 다음 단계로 진행할 수 있습니다:
+
+1. **Feature 개발 시작:** [Feature 개발 워크플로우](#1-feature-개발-워크플로우) 참조
+2. **자동화 스크립트 사용:** [자동화 스크립트](#자동화-스크립트) 섹션의 스크립트 활용
+3. **기존 프로젝트에 적용:** 이미 클론된 프로젝트라면 Step 2부터 진행
+
+### 기존 프로젝트에 적용하는 경우
+
+이미 로컬에 저장소가 있고 `main` 브랜치에서 작업 중인 경우:
+
+```bash
+# 현재 위치 확인
+cd /Users/pado/IdeaProjects/wrms-nt-ui
+
+# main 브랜치 최신화
+git checkout main
+git pull origin main
+
+# develop 브랜치 생성 (main에서 분기)
+# 이 명령어 실행 후 자동으로 develop 브랜치로 전환됨
+git checkout -b develop
+
+# develop 브랜치를 원격에 푸시
+git push -u origin develop
+
+# 현재 develop 브랜치에 있으므로 바로 worktrees 디렉토리 생성
+# main 브랜치로 돌아갈 필요 없음
+mkdir -p worktrees/{feature,release,hotfix}
+
+# 현재 브랜치 확인 (develop 브랜치에 있어야 함)
+git branch
+```
+
+**참고:** `git checkout -b develop` 명령어는 develop 브랜치를 생성하고 자동으로 해당 브랜치로 전환하므로, worktrees 디렉토리를 만들기 위해 main 브랜치로 돌아갈 필요가 없습니다.
 
 ---
 
