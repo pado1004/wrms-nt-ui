@@ -383,9 +383,22 @@ cd worktrees/feature/user-authentication
 # 커밋
 git add .
 git commit -m "feat: 사용자 인증 기능 구현"
+
+# (선택사항) 협업이 필요한 경우 원격에 푸시
+# git push -u origin feature/user-authentication
 ```
 
+**원격 푸시 여부 결정:**
+- **로컬에서만 작업:** 원격에 푸시하지 않음 (혼자 작업하는 경우)
+- **협업 필요:** 원격에 푸시하여 다른 개발자와 공유 (PR/MR 생성 등)
+
 #### Step 3: Feature 완료 및 병합
+
+**중요:** Worktree가 브랜치를 사용 중이면 브랜치를 삭제할 수 없습니다. 반드시 **Worktree를 먼저 제거**한 후 브랜치를 삭제해야 합니다.
+
+**시나리오 1: 로컬에서만 작업한 경우 (일반적인 경우)**
+
+Step 2에서 원격에 푸시하지 않은 경우입니다. 이 경우 원격 브랜치가 없으므로 원격 브랜치 삭제는 불필요합니다.
 
 ```bash
 # Feature 브랜치를 develop에 병합
@@ -393,12 +406,53 @@ cd /Users/pado/IdeaProjects/wrms-nt-ui
 git checkout develop
 git merge feature/user-authentication
 
-# 원격 저장소에 푸시
+# develop 브랜치를 원격 저장소에 푸시
 git push origin develop
-git push origin --delete feature/user-authentication  # 원격 브랜치 삭제
 
-# Worktree 제거
+# 1단계: Worktree 제거 (먼저 제거해야 브랜치 삭제 가능)
 git worktree remove worktrees/feature/user-authentication
+
+# 2단계: 로컬 브랜치 삭제 (Worktree 제거 후 가능)
+git branch -d feature/user-authentication
+
+# 원격 브랜치는 없으므로 삭제할 필요 없음
+```
+
+**시나리오 2: 원격에 푸시한 경우 (협업이 필요한 경우)**
+
+Step 2에서 `git push -u origin feature/user-authentication`을 실행한 경우입니다. 이 경우 원격 브랜치를 삭제해야 합니다.
+
+```bash
+# Feature 브랜치를 develop에 병합
+cd /Users/pado/IdeaProjects/wrms-nt-ui
+git checkout develop
+git merge feature/user-authentication
+
+# develop 브랜치를 원격 저장소에 푸시
+git push origin develop
+
+# 1단계: Worktree 제거 (먼저 제거해야 브랜치 삭제 가능)
+git worktree remove worktrees/feature/user-authentication
+
+# 2단계: 로컬 브랜치 삭제 (Worktree 제거 후 가능)
+git branch -d feature/user-authentication
+
+# 3단계: 원격 브랜치 삭제 (원격에 푸시한 경우에만 필요)
+git push origin --delete feature/user-authentication
+```
+
+**원격 브랜치 존재 여부 확인이 필요한 경우:**
+
+원격에 푸시했는지 확실하지 않은 경우, 다음 명령어로 확인할 수 있습니다:
+
+```bash
+# 원격 브랜치 존재 여부 확인
+if git ls-remote --heads origin feature/user-authentication | grep -q feature/user-authentication; then
+  echo "원격 브랜치가 존재합니다. 삭제합니다."
+  git push origin --delete feature/user-authentication
+else
+  echo "원격 브랜치가 없습니다. 삭제할 필요 없습니다."
+fi
 ```
 
 ### 2. Release 준비 워크플로우
@@ -432,6 +486,8 @@ git commit -m "chore: 버전 1.0.0 릴리스 준비"
 
 #### Step 3: Release 완료
 
+**중요:** Worktree가 브랜치를 사용 중이면 브랜치를 삭제할 수 없습니다. 반드시 **Worktree를 먼저 제거**한 후 브랜치를 삭제해야 합니다.
+
 ```bash
 # Release 브랜치를 main과 develop에 병합
 cd /Users/pado/IdeaProjects/wrms-nt-ui
@@ -447,12 +503,17 @@ git checkout develop
 git merge release/1.0.0
 git push origin develop
 
-# 원격 브랜치 삭제
-git push origin --delete release/1.0.0
-
-# Worktree 제거
+# 1단계: Worktree 제거 (먼저 제거해야 브랜치 삭제 가능)
 git worktree remove worktrees/release/1.0.0
+
+# 2단계: 로컬 브랜치 삭제 (Worktree 제거 후 가능)
+git branch -d release/1.0.0
+
+# 3단계: (조건부) 원격 브랜치가 있는 경우에만 삭제
+git push origin --delete release/1.0.0 2>/dev/null || echo "원격 브랜치가 없습니다."
 ```
+
+**참고:** Release 브랜치는 일반적으로 원격에 푸시하여 팀과 공유하지만, 로컬에서만 작업한 경우 원격 브랜치가 없을 수 있습니다.
 
 ### 3. Hotfix 워크플로우
 
@@ -482,6 +543,8 @@ git commit -m "fix: 긴급 버그 수정"
 
 #### Step 3: Hotfix 배포
 
+**중요:** Worktree가 브랜치를 사용 중이면 브랜치를 삭제할 수 없습니다. 반드시 **Worktree를 먼저 제거**한 후 브랜치를 삭제해야 합니다.
+
 ```bash
 cd /Users/pado/IdeaProjects/wrms-nt-ui
 
@@ -496,12 +559,17 @@ git checkout develop
 git merge hotfix/critical-bug-fix
 git push origin develop
 
-# 원격 브랜치 삭제
-git push origin --delete hotfix/critical-bug-fix
-
-# Worktree 제거
+# 1단계: Worktree 제거 (먼저 제거해야 브랜치 삭제 가능)
 git worktree remove worktrees/hotfix/critical-bug-fix
+
+# 2단계: 로컬 브랜치 삭제 (Worktree 제거 후 가능)
+git branch -d hotfix/critical-bug-fix
+
+# 3단계: (조건부) 원격 브랜치가 있는 경우에만 삭제
+git push origin --delete hotfix/critical-bug-fix 2>/dev/null || echo "원격 브랜치가 없습니다."
 ```
+
+**참고:** Hotfix 브랜치는 긴급 수정이므로 일반적으로 원격에 푸시하여 팀과 공유하지만, 로컬에서만 작업한 경우 원격 브랜치가 없을 수 있습니다.
 
 ### 4. 여러 Feature 동시 개발
 
