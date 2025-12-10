@@ -1,0 +1,9 @@
+# Shell scripts should have LF line endings
+*.sh text eol=lf
+
+# Documentation
+*.md text eol=lf
+
+# Git config
+.gitignore text eol=lf
+.gitattributes text eol=lf
